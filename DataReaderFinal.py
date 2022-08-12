@@ -8,10 +8,14 @@ import scipy
 from scipy.stats import poisson
 from datetime import datetime
 
-
-def filenameToData(fileName):
+def fileNameToData(fileName):
     with open(fileName) as f:
         lines = f.read().splitlines()
+    data = thorFileToData(lines)
+    return(data)
+
+
+def thorFileToData(lines):
     dataList = list()
     for i in range(5, len(lines), 6):
         lmString = lines[i]
@@ -27,10 +31,12 @@ def stringToTable(lmString, dateTime):
     data['PPS'] = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data['flags']]) ## very useful column for future operations - separates out GPS signal from the Flags column
     data['Seconds'] = getSecondsFromWallClock(data)
     data['UnixTime'] = dateTime.timestamp() + data['Seconds'] - data['Seconds'].iloc[-1] ## this assigns dateTime to the final photon in the table, and works backwards from there to previous photons
-    unixTimeCorrection = data[data['PPS'] == 1]['UnixTime'].apply(lambda x: (x - round(x)).median())
-    pulseData = data[data['PPS'] == 1]
-    unixTimeCorrection = (round(pulseData['UnixTime']) - pulseData['UnixTime']).median()
-    data['UnixTime'] = data['UnixTime'] + unixTimeCorrection
+    firstDT = datetime.fromtimestamp(data['UnixTime'].min())
+    data['SecondsOfDay'] = data['UnixTime'] - datetime(firstDT.year, firstDT.month, firstDT.day).timestamp() ## subtracts out 00:00:00 of the earliest day in UNIX time. For files that cross midnight this will result in SecondsOfDay exceeding 86000 or whatever
+    
+    unixTimeCorrection = data[data['PPS'] == 1]['SecondsOfDay'].apply(lambda x: (x - round(x))).median()
+    data['SecondsOfDay'] = data['SecondsOfDay'] + unixTimeCorrection
+    data['UnixTime'] = data['UnixTime'] + unixTimeCorrection ## some of this precision is going to get truncated. If that's a big deal then you need to recreate a DateTime object by adding the adjusted SecondsOfDay to firstDT.
     return(data)
 
 def getSecondsFromWallClock(data):
@@ -41,4 +47,6 @@ def getSecondsFromWallClock(data):
         raise Exception("wallclock and GPS clocks in significant disagreement")
     Seconds = data['wc'] / wallClockCorrection
     return(Seconds)
+
+def get
     
