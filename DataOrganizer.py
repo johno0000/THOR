@@ -28,7 +28,7 @@ def sortFilesInThisDirectory(directoryPath):
     folderNamesList = getFolderNamesList(files)
     for folder in folderNamesList:
         os.system("mkdir -p " + folder) # the -p option means it won't return an error if the directory already exists. With or without this option, mkdir will never overwrite or clear an existing directory
-        os.system("mv *_" + folder + "_* ./" + folder) ## This is concise but inefficent : we deleted the information of what goes where and are computing it again. I think this makes things simpler, keeping shell and python tasks relatively separate. If performance boost is needed, simply keep track of what file goes where when the files are used to generate folder names to begin with. 
+        os.system("cp *_" + folder + "_* ./" + folder) ## This is concise but inefficent : we deleted the information of what goes where and are computing it again. I think this makes things simpler, keeping shell and python tasks relatively separate. If performance boost is needed, simply keep track of what file goes where when the files are used to generate folder names to begin with. 
     return(0)    
     
     
