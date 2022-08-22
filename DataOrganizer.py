@@ -1,4 +1,6 @@
+import os
 import re
+from glob import glob
 from datetime import datetime
 
 
@@ -20,3 +22,12 @@ def getFolderNamesList(files):
         if folderName not in folderNameList:
             folderNameList.append(folderName)
     return(folderNameList)
+
+def sortFilesinDirectory(directoryPath):
+    files = glob("eRC*")
+    folderNamesList = getFolderNamesList(files)
+    for folder in folderNamesList:
+        os.system("mkdir " + folder)
+        
+    
+    
