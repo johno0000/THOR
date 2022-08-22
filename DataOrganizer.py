@@ -20,7 +20,7 @@ def sortFilesInThisDirectory(directoryPath):
     for file in files:
         dt = getDateTimeFromFile(file)
         folderName = getFolderNameForDateTime(dt)
-        if(!os.path.exists(folderName)):
+        if not os.path.exists(folderName):
             os.mkdirs(folderName)
         shutil.moves(file, folderName)
     return(0)
