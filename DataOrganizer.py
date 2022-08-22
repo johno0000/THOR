@@ -14,7 +14,7 @@ def getFolderNameForDateTime(dateTime):
     folderName = dateTime.strftime("%y%m%d")
     return(folderName)
 
-def sortFilesInThisDirectory(directoryPath):
+def sortFilesInThisDirectory(directoryPath = os.getcwd()):
     os.chdir(directoryPath)
     files = glob("eRC*")
     for file in files:
