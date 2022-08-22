@@ -24,6 +24,7 @@ def getFolderNamesList(files):
     return(folderNameList)
 
 def sortFilesInThisDirectory(directoryPath):
+    os.chdir(directoryPath)
     files = glob("eRC*")
     folderNamesList = getFolderNamesList(files)
     for folder in folderNamesList:
