@@ -23,7 +23,7 @@ def getFolderNamesList(files):
             folderNameList.append(folderName)
     return(folderNameList)
 
-def sortFilesinDirectory(directoryPath):
+def sortFilesInThisDirectory(directoryPath):
     files = glob("eRC*")
     folderNamesList = getFolderNamesList(files)
     for folder in folderNamesList:
