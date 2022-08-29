@@ -20,13 +20,10 @@ def sortFilesInThisDirectory(directoryPath = os.getcwd()):
     files = glob("eRC*")
     for file in files:
         dt = getDateTimeFromFile(file)
-        folderName = getFolderNameForDateTime(dt)
+        folderName = directoryPath + getFolderNameForDateTime(dt)
         if not os.path.exists(folderName):
             os.mkdir(folderName)
-        if not os.path.exists(folderName + "/" + file):
-            shutil.move(file, folderName)
-        else:
-            print(folderName + file + " already exists")
+        shutil.move(file, folderName)
     return(0)
           
     
