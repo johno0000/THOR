@@ -25,6 +25,8 @@ def sortFilesInThisDirectory(directoryPath = os.getcwd()):
             os.mkdir(folderName)
         if not os.path.exists(folderName + "/" + file):
             shutil.move(file, folderName)
+        else:
+            print(folderName + file + " already exists")
     return(0)
           
     
