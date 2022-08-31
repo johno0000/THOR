@@ -47,6 +47,4 @@ def getSecondsFromWallClock(data):
         raise Exception("wallclock and GPS clocks in significant disagreement")
     Seconds = data['wc'] / wallClockCorrection
     return(Seconds)
-
-def get
     
