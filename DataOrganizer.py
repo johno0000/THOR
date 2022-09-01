@@ -20,7 +20,7 @@ def sortFilesInThisDirectory(directoryPath = os.getcwd()):
     files = glob("eRC*")
     for file in files:
         dt = getDateTimeFromFile(file)
-        folderName = directoryPath + getFolderNameForDateTime(dt) + "/"
+        folderName = directoryPath + "/" + getFolderNameForDateTime(dt) + "/"
         if not os.path.exists(folderName):
             os.mkdir(folderName)
         shutil.move(file, folderName)
