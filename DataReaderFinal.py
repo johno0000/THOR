@@ -25,15 +25,20 @@ def thorFileToData(lines):
         lmString = lines[i]
         timeString = lines[i - 2]
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
-        dataList.append(stringToTable(lmString, dateTime))
+        data = getDataFromLMthor(lmString, dateTime))
+        data = processDataTiming(data)
+        dataList.append(data)
     data = pd.concat(dataList)
     return(data)
 
 
-def stringToTable(lmString, dateTime):
+def getDataFromLMthor(lmString, dateTime):
     jsonDict = json.loads(re.sub("eRC[0-9]{4} ", "", lmString))['lm_data']
     data = pd.DataFrame.from_dict(jsonDict)
     data['PPS'] = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data['flags']]) ## very useful column for future operations - separates out GPS signal from the Flags column
+    return(data)
+
+def processDataTiming(data):
     data['Seconds'] = getSecondsFromWallClock(data)
     data['UnixTime'] = dateTime.timestamp() + data['Seconds'] - data['Seconds'].iloc[-1] ## this assigns dateTime to the final photon in the table, and works backwards from there to previous photons
     firstDT = datetime.fromtimestamp(data['UnixTime'].min())
