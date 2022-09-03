@@ -54,6 +54,23 @@ def getSecondsFromWallClock(data):
     return(Seconds)
 
 
+def getDataFromLM2(lines):
+    buffers = [s for s in lines if len(s) > 1000]
+    buffers = [x.split(" ")[9:len(x)] for x in buffers]
+    buffers = [[int(y) for y in x] for x in buffers]
+    data = numpy.array(buffers)
+    data = [x.reshape(int(len(x)/6), 6) for x in data]
+    data = [pd.DataFrame(x) for x in data]
+    data = pd.concat(data, ignore_index = True)
+    data = data[~data.duplicated()]
+    coarsetick = 65536
+    wc = (data[2] + data[3] * coarsetick + data[4] * coarsetick * coarsetick) 
+    energy = data[1]
+    ticks = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data[5]])
+    newData = pd.concat([energy.rename('energy'), wc.rename('wc'), ticks.rename('PPS')], axis = 1)
+    return(newData)
+
+
 
 
 
