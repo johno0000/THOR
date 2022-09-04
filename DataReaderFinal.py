@@ -15,7 +15,17 @@ def fileNameToData(fileName):
     else:
         f = open(fileName)
     lines = f.read().splitlines()
-    data = thorFileToData(lines)
+
+    if "xtr" in fileName:
+        return(0)
+
+    if(len(lines[0]) == 3):
+        data = thorFileToData(lines)
+    else:
+         mode = 1
+         if len(lines[2]) < 50:
+            mode = 2
+         data = lmFileToData(lines, mode)
     return(data)
 
 
@@ -25,11 +35,17 @@ def thorFileToData(lines):
         lmString = lines[i]
         timeString = lines[i - 2]
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
-        data = getDataFromLMthor(lmString))
+        data = getDataFromLMthor(lmString)
         data = processDataTiming(data, dateTime)
         dataList.append(data)
     data = pd.concat(dataList)
     return(data)
+
+def lmFileToData(lines, mode):
+    dataList = list()
+    return(datalist)
+
+    
 
 
 def getDataFromLMthor(lmString):
@@ -59,23 +75,32 @@ def getSecondsFromWallClock(data):
     return(Seconds)
 
 
-def getDataFromLM2(lines):
+def getDataFromLM(lines, mode):
+    if mode is 1:
+        start = 2
+        rowLength = 3
+    elif mode is 2:
+        start = 9
+        rowLength = 6
     buffers = [s for s in lines if len(s) > 1000]
-    buffers = [x.split(" ")[9:len(x)] for x in buffers]
+    buffers = [x.split(" ")[start:len(x)] for x in buffers]
     buffers = [[int(y) for y in x] for x in buffers]
-    data = numpy.array(buffers)
-    data = [x.reshape(int(len(x)/6), 6) for x in data]
+    data = np.array(buffers, dtype = object)
+    data = [np.reshape(x, (int(len(x)/rowLength), rowLength)) for x in data]
     data = [pd.DataFrame(x) for x in data]
     data = pd.concat(data, ignore_index = True)
     data = data[~data.duplicated()]
     coarsetick = 65536
-    wc = (data[2] + data[3] * coarsetick + data[4] * coarsetick * coarsetick) 
-    energy = data[1]
-    ticks = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data[5]])
+    if mode is 2:
+        wc = (data[2] + data[3] * coarsetick + data[4] * coarsetick * coarsetick) 
+        energy = data[1]
+        ticks = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data[5]])
+    elif mode is 1:
+        wc = (data[1] + data[2] * coarsetick) 
+        energy = data[0]
+        ticks = data[0] * 0 ## For some reason makes the pd.concat phase much faster
     newData = pd.concat([energy.rename('energy'), wc.rename('wc'), ticks.rename('PPS')], axis = 1)
     return(newData)
-
-
 
 
 
