@@ -11,28 +11,29 @@ import gzip
 
 
 def fileNameToData(fileName):
-    if(fileName[-2:] == 'gz'):
+    if(fileName[-2:] == 'gz'):        # This decompresses the .gz file if it's gz, that way you don't have to uncompress a file first if you don't want to. Works either way.
         f = gzip.open(fileName, 'rt')
     else:
         f = open(fileName)
     lines = f.read().splitlines()
-    if ("xtr" in fileName):
+    if ("xtr" in fileName):         # This means it's a trace file, so go to the trace reading function
         return(traceFileToData(lines))
-    if(len(lines[0]) == 3):
+    if(len(lines[0]) == 3):         # Only the thor LM files start with a 3 character (including a space) line, so that's the fastest way to identify that format
         data = thorFileToData(lines)
     else:
          mode = 1
-         if len(lines[2]) < 50:
+         if len(lines[2]) < 50: #Early LM files (mode 1) Just alternate (Time) - (Buffer) - (Time) - (Buffer) etc. The 2nd version has 4 time tags, so seeing that the second line is a time tag and not a full buffer tells you the type.
             mode = 2
          data = lmFileToData(lines, mode)
     return(data)
 
 
+##Perhaps these next two files could be combined, they're very similar, the main difference is the call to "getDataFromLMThor" and the different numbers used for iteration
 def thorFileToData(lines):
     dataList = list()
     for i in range(5, len(lines), 6):
         lmString = lines[i]
-        timeString = lines[i - 2]
+        timeString = lines[i - 2] #NEED TO DOUBLE CHECK THIS WITH JEFF
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
         data = getDataFromLMthor(lmString)
         data = processDataTiming(data, dateTime)
@@ -50,7 +51,7 @@ def lmFileToData(lines, mode):
     elif mode is 2:
         start = 7
         increment = 6
-        tStamp = 2
+        tStamp = 2 #NEED TO DOUBLE CHECK THIS WITH JEFF
     for i in range(start, len(lines), increment):
         lmString = lines[i]
         timeString = lines[i - tStamp]
@@ -119,7 +120,7 @@ def getDataFromLM(lmString, mode):
     elif mode is 1:
         wc = (data[1] + data[2] * coarsetick) 
         energy = data[0]
-        ticks = data[0] * 0 ## For some reason makes the pd.concat phase much faster
+        ticks = data[0] * 0 ## For some reason makes the pd.concat phase much faster than doing (repeat(0, len(data)))
         flags = data[0] * 0
     newData = pd.concat([energy.rename('energy'), wc.rename('wc'), ticks.rename('PPS'), flags.rename('flags')], axis = 1)
     return(newData)
@@ -132,7 +133,7 @@ def traceFileToData(lines):
             timeString = lines[i - 1]
             jsonDict = json.loads(re.sub("eRC[0-9]{4} [0-9]", "", lines[i]))
             data = pd.DataFrame.from_dict(jsonDict)
-            data['BufferNo'] = int(lines[i][8:9])
+            data['BufferNo'] = int(lines[i][8:9]). ## There should be some significance to how this affects the time relationships?
             data['DateTime'] = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
             data['Seconds'] = [x * 1.25e-8 for x in range(len(data))]
             dataList.append(data)
