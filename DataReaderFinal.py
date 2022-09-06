@@ -17,7 +17,7 @@ def fileNameToData(fileName):
         f = open(fileName)
     lines = f.read().splitlines()
     if ("xtr" in fileName):
-        return(0)
+        return(traceFileToData(lines))
     if(len(lines[0]) == 3):
         data = thorFileToData(lines)
     else:
@@ -69,33 +69,6 @@ def getDataFromLMthor(lmString):
     return(data)
 
 
-def getDataFromLM(lmString, mode):
-    if mode is 1:
-        start = 2
-        rowLength = 3
-    elif mode is 2:
-        start = 9
-        rowLength = 6
-    lmStrings = lmString.split(" ")[start:]
-    buffer = [int(y) for y in lmStrings]
-    data = np.reshape(buffer, (int(len(buffer)/rowLength), rowLength))
-    data = pd.DataFrame(data)
-    data = data[~data.duplicated()]
-    coarsetick = 65536
-    if mode is 2:
-        wc = (data[2] + data[3] * coarsetick + data[4] * coarsetick * coarsetick) 
-        energy = data[1]
-        ticks = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data[5]])
-        flags = data[5]
-    elif mode is 1:
-        wc = (data[1] + data[2] * coarsetick) 
-        energy = data[0]
-        ticks = data[0] * 0 ## For some reason makes the pd.concat phase much faster
-        flags = data[0] * 0
-    newData = pd.concat([energy.rename('energy'), wc.rename('wc'), ticks.rename('PPS'), flags.rename('flags')], axis = 1)
-    return(newData)
-
-
 def processDataTiming(data, dateTime):
     data['Seconds'] = getSecondsFromWallClock(data)
     data['UnixTime'] = dateTime.timestamp() + data['Seconds'] - data['Seconds'].iloc[-1] ## this assigns dateTime to the final photon in the table, and works backwards from there to previous photons
@@ -122,6 +95,53 @@ def getSecondsFromWallClock(data):
         data['gpsSync'] = True
     Seconds = data['wc'] / wallClockCorrection
     return(Seconds)
+
+
+def getDataFromLM(lmString, mode):
+    if mode is 1:
+        start = 2
+        rowLength = 3
+    elif mode is 2:
+        start = 9
+        rowLength = 6
+    lmStrings = lmString.split(" ")[start:]
+    buffer = [int(y) for y in lmStrings]
+    data = np.reshape(buffer, (int(len(buffer)/rowLength), rowLength))
+    data = pd.DataFrame(data)
+    #data = pd.concat(data, ignore_index = True)
+    data = data[~data.duplicated()]
+    coarsetick = 65536
+    if mode is 2:
+        wc = (data[2] + data[3] * coarsetick + data[4] * coarsetick * coarsetick) 
+        energy = data[1]
+        ticks = pd.Series([int('{0:08b}'.format(x)[-8]) for x in data[5]])
+        flags = data[5]
+    elif mode is 1:
+        wc = (data[1] + data[2] * coarsetick) 
+        energy = data[0]
+        ticks = data[0] * 0 ## For some reason makes the pd.concat phase much faster
+        flags = data[0] * 0
+    newData = pd.concat([energy.rename('energy'), wc.rename('wc'), ticks.rename('PPS'), flags.rename('flags')], axis = 1)
+    return(newData)
+
+
+def traceFileToData(lines):
+    dataList = list()
+    for i in range(4, len(lines), 5):
+            dataLine = lines[i]
+            timeString = lines[i - 1]
+            jsonDict = json.loads(re.sub("eRC[0-9]{4} [0-9]", "", lines[i]))
+            data = pd.DataFrame.from_dict(jsonDict)
+            data['BufferNo'] = int(lines[i][8:9])
+            data['DateTime'] = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
+            data['Seconds'] = [x * 1.25e-8 for x in range(len(data))]
+            dataList.append(data)
+    newData = pd.concat(dataList)
+    return(newData)
+
+
+
+
 
 
 
