@@ -57,6 +57,13 @@ def lmFileToData(lines, mode):
         timeString = lines[i - tStamp]
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
         data = getDataFromLM(lmString, mode)
+        if (i + increment < len(lines)):
+            nextLmString = lines[i + increment]
+            nextData = getDataFromLM(nextLmString, mode)
+            match = data['wc'][0] == nextData['wc'][0]
+            if (match):
+                print("duplicate buffer " + str(i))
+                continue
         data = processDataTiming(data, dateTime)
         dataList.append(data)
     data = pd.concat(dataList)
@@ -133,7 +140,7 @@ def traceFileToData(lines):
             timeString = lines[i - 1]
             jsonDict = json.loads(re.sub("eRC[0-9]{4} [0-9]", "", lines[i]))
             data = pd.DataFrame.from_dict(jsonDict)
-            data['BufferNo'] = int(lines[i][8:9]). ## There should be some significance to how this affects the time relationships?
+            data['BufferNo'] = int(lines[i][8:9]) # There should be some significance to how this affects the time relationships?
             data['DateTime'] = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
             data['Seconds'] = [x * 1.25e-8 for x in range(len(data))]
             dataList.append(data)
