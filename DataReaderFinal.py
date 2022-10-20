@@ -36,7 +36,7 @@ def thorFileToData(lines):
         timeString = lines[i - 2] #NEED TO DOUBLE CHECK THIS WITH JEFF
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
         data = getDataFromLMthor(lmString)
-        data = processDataTiming(data, dateTime)
+        data = processDataTiming(data, dateTime, mode=0)
         dataList.append(data)
     data = pd.concat(dataList)
     return(data)
@@ -64,7 +64,7 @@ def lmFileToData(lines, mode):
             if (match):
                 print("duplicate buffer " + str(i))
                 continue
-        data = processDataTiming(data, dateTime)
+        data = processDataTiming(data, dateTime, mode=mode)
         dataList.append(data)
     data = pd.concat(dataList)
     return(data)
@@ -77,8 +77,8 @@ def getDataFromLMthor(lmString):
     return(data)
 
 
-def processDataTiming(data, dateTime):
-    data['Seconds'] = getSecondsFromWallClock(data)
+def processDataTiming(data, dateTime, mode):
+    data['Seconds'] = getSecondsFromWallClock(data, mode)
     data['UnixTime'] = dateTime.timestamp() + data['Seconds'] - data['Seconds'].iloc[-1] ## this assigns dateTime to the final photon in the table, and works backwards from there to previous photons
     firstDT = datetime.fromtimestamp(data['UnixTime'].min())
     data['SecondsOfDay'] = data['UnixTime'] - datetime(firstDT.year, firstDT.month, firstDT.day).timestamp() ## subtracts out 00:00:00 of the earliest day in UNIX time. For files that cross midnight this will result in SecondsOfDay exceeding 86000 or whatever
@@ -90,7 +90,7 @@ def processDataTiming(data, dateTime):
     return(data)
 
 
-def getSecondsFromWallClock(data):
+def getSecondsFromWallClock(data, mode):
     rolloverLength = pow(2, 36)
     if mode == 1:
         rolloverLength = pow(2, 32)
@@ -102,7 +102,7 @@ def getSecondsFromWallClock(data):
     if(abs(wallClockCorrection - 8e7) > 1e4):
         raise Exception("wallclock and GPS clocks in significant disagreement")
     if(np.isnan(wallClockCorrection)):
-        wallClockCorrection = 8e8
+        wallClockCorrection = 8e7
         data['gpsSync'] = False
     else:
         data['gpsSync'] = True
