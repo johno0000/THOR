@@ -54,7 +54,7 @@ def lmFileToData(lines, mode):
         tStamp = 2 #NEED TO DOUBLE CHECK THIS WITH JEFF
     for i in range(start, len(lines), increment):
         lmString = lines[i]
-        timeString = lines[i - tStamp]
+        timeString = lines[i + tStamp]
         dateTime = datetime.strptime(timeString, "%Y %m %d %H %M %S %f")
         data = getDataFromLM(lmString, mode)
         if (i + increment < len(lines)):
@@ -91,7 +91,12 @@ def processDataTiming(data, dateTime):
 
 
 def getSecondsFromWallClock(data):
-    rolloverCorrection = (data['wc'].diff() < 0).cumsum() * pow(2, 36)  ## Every time you encounter the wallclock going backwards, assume it's rollover. Count how many times its rolled over and multiply that by 2^36 for each row's correction.
+    rolloverLength = pow(2, 36)
+    if mode == 1:
+        rolloverLength = pow(2, 32)
+    elif mode == 2:
+        rolloverLength = pow(2, 48)
+    rolloverCorrection = (data['wc'].diff() < 0).cumsum() * rolloverLength  ## Every time you encounter the wallclock going backwards, assume it's rollover. Count how many times its rolled over and multiply that by 2^36 for each row's correction.
     data['wc'] = data['wc'] + rolloverCorrection ## Changing the contents of the object passed in the function - there might be a better way to do this but it should work since Python passes by object reference
     wallClockCorrection = (data['wc'][data['PPS'] == 1]).diff().median()
     if(abs(wallClockCorrection - 8e7) > 1e4):
