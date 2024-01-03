@@ -8,7 +8,9 @@ from datetime import datetime
 import DataOrganizer as DO
 
 
-dataDirectory = '/media/AllDetectorData/Detectors'
+dataDirectory = '/media/AllDetectorData/Detectors/'
+eventDirectory = os.path.expanduser('~/Desktop/Events/')
+tgfTime = datetime(2022, 7, 26, 4, 57,00)
 
 
 def getDateTimeFromFile(fileName):
@@ -53,14 +55,23 @@ def returnClosestFile(files, dateTime):
     timeDiffs = [getTimeToFile(file, dateTime) for file in files]
     if(not any([x > 0 for x in timeDiffs])):
         return('')
-    minDiff = min([x for x in timeDiffs if x > 0])
+    minDiff = max([x for x in timeDiffs if x < 0])
     index = timeDiffs.index(minDiff)
     return(files[index])
 
 
-def getFilesForEvent(dateTimeUTC, detector):
+def returnClosestFilesForEventInThisDirectory(dateTime):
+    files = glob('*')
+    data = getFileDataFrame(files)
+    eventFiles = data.groupby(['SN', 'isTrace']).apply(lambda x: 
+                    returnClosestFile(x.file, dateTime)).reset_index(drop = True)
+    eventFiles = [file for file in eventFiles if 'eRC' in file]
+    return(eventFiles)
+    
+
+def changeToDetectorDirectory(detector, dateTimeUTC, dataDirectory = dataDirectory):
     os.chdir(dataDirectory)
-    dirs = glob('*') + glob('THOR/*')
+    dirs = glob('*/') + glob('THOR/*')
     print(dirs)
     
     targetDir = [x for x in dirs if x.lower() in detector.lower()]
@@ -70,15 +81,28 @@ def getFilesForEvent(dateTimeUTC, detector):
         print("No match")
         return()
     
-    dayDir = "/Data/" + DO.getFolderNameForDateTime(dateTimeUTC)
-    os.chdir(dayDir)
-    files = glob('*')
+    targetDir = targetDir + 'Data/' + DO.getFolderNameForDateTime(dateTimeUTC)
+    return(targetDir)
+
+
+def TransferFilesToNewEventFolder(files, newDirName, eventDir = eventDirectory):
+    destination = eventDir + newDirName
+    os.mkdir(destination)
+    for file in files:
+        print(file + " going to " + destination)
+        shutil.copy2(file, destination)
+    return()
+
+def CreateTgfFolder(dateTimeUTC, detectorName, eventDir = eventDirectory, 
+                    dataDirectory = dataDirectory):
+    newDirectoryName = DO.getFolderNameForDateTime(dateTimeUTC) + '_' + detectorName
+    changeToDetectorDirectory(detectorName, dateTimeUTC, dataDirectory) ## this changes the directory
+    files = returnClosestFilesForEventInThisDirectory(dateTime = dateTimeUTC)
+    TransferFilesToNewEventFolder(files = files, newDirName = newDirectoryName)
+    return()
+    
+    
         
-    data = getFileDataFrame(files)
-    eventFiles = data.groupby(['SN', 'isTrace']).apply(lambda x: 
-                    returnClosestFile(x.file, dateTime)).reset_index(drop = True)
-    eventFiles = [file for file in eventFiles if 'eRC' in file]
-    return(eventFiles)
 
 
     
