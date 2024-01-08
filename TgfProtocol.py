@@ -54,7 +54,7 @@ def returnClosestFile(files, dateTime):
     files = files.reset_index(drop = True)
     timeDiffs = [getTimeToFile(file, dateTime) for file in files]
     if(not any([x > 0 for x in timeDiffs])):
-        return('')
+        return('NoFilesFound')
     minDiff = max([x for x in timeDiffs if x < 0])
     index = timeDiffs.index(minDiff)
     return(files[index])
@@ -62,6 +62,7 @@ def returnClosestFile(files, dateTime):
 
 def returnClosestFilesForEventInThisDirectory(dateTime):
     files = glob('*')
+
     data = getFileDataFrame(files)
     eventFiles = data.groupby(['SN', 'isTrace']).apply(lambda x: 
                     returnClosestFile(x.file, dateTime)).reset_index(drop = True)
@@ -71,23 +72,28 @@ def returnClosestFilesForEventInThisDirectory(dateTime):
 
 def changeToDetectorDirectory(detector, dateTimeUTC, dataDirectory = dataDirectory):
     os.chdir(dataDirectory)
-    dirs = glob('*/') + glob('THOR/*')
+    dirs = glob('*/') + glob('THOR/THOR[0-9]/')
     print(dirs)
     
-    targetDir = [x for x in dirs if x.lower() in detector.lower()]
+    targetDir = [x for x in dirs if detector.lower() in x.lower()]
+    print(targetDir)
     if len(targetDir) == 1:
-        os.chdir(targetDir)
+        targetDir = targetDir[0]
     else:
         print("No match")
         return()
     
-    targetDir = targetDir + 'Data/' + DO.getFolderNameForDateTime(dateTimeUTC)
+    targetDir = dataDirectory + targetDir + 'Data/' + DO.getFolderNameForDateTime(dateTimeUTC)
+    os.chdir(targetDir)
+    print('Changing to ' + targetDir)
     return(targetDir)
 
 
 def TransferFilesToNewEventFolder(files, newDirName, eventDir = eventDirectory):
     destination = eventDir + newDirName
-    os.mkdir(destination)
+    dataFolder = destination + ''
+    os.makedirs(destination, exist_ok = True)
+    os.makedirs(destination + 'DetectorFiles/')
     for file in files:
         print(file + " going to " + destination)
         shutil.copy2(file, destination)
@@ -95,12 +101,18 @@ def TransferFilesToNewEventFolder(files, newDirName, eventDir = eventDirectory):
 
 def CreateTgfFolder(dateTimeUTC, detectorName, eventDir = eventDirectory, 
                     dataDirectory = dataDirectory):
-    newDirectoryName = DO.getFolderNameForDateTime(dateTimeUTC) + '_' + detectorName
+    newDirectoryName = DO.getFolderNameForDateTime(dateTimeUTC) + '_' + detectorName + '/'
     changeToDetectorDirectory(detectorName, dateTimeUTC, dataDirectory) ## this changes the directory
     files = returnClosestFilesForEventInThisDirectory(dateTime = dateTimeUTC)
+    ## Tranfer files to new folder
     TransferFilesToNewEventFolder(files = files, newDirName = newDirectoryName)
     return()
     
+    
+        
+
+
+
     
         
 
